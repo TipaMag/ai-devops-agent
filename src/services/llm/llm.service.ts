@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { config } from "../config";
-import { ChatMessage, LLMResponse } from "../agent/types";
-import { getToolSchemas } from "../agent/toolRegistry";
+import { config } from "../../config";
+import { ChatMessage, LLMResponse } from "../../agent/types";
+import { getToolSchemas } from "../../agent/toolRegistry";
 
 const geminiAI = new GoogleGenAI({ apiKey: config.geminiKey });
 

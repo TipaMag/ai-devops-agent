@@ -1,5 +1,4 @@
-
-import { callLLM } from "../llm/llm.service";
+import { callLLM } from "../services/llm/llm.service";
 import { toolRegistry } from "./toolRegistry";
 import { evaluatePolicy } from "./policy";
 import { SYSTEM_PROMPT } from "./systemPrompt";

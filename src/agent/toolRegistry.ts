@@ -1,4 +1,4 @@
-import { shellTool } from "../tools/shell.tool";
+import { shellTool } from "./tools/shell.tool";
 import { Type } from "@google/genai";
 
 export type RiskLevel = "low" | "high";

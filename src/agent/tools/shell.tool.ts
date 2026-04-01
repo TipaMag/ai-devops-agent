@@ -1,7 +1,7 @@
 import { exec } from "child_process";
 import { promisify } from "util";
 import { Type } from "@google/genai";
-import type { ToolDefinition } from "../agent/toolRegistry";
+import type { ToolDefinition } from "../toolRegistry";
 
 const execAsync = promisify(exec);
 const TIMEOUT_MS = 10_000;

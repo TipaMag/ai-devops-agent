@@ -12,9 +12,15 @@ export interface PendingToolCall {
   preview: string; // показується юзеру: "Run: df -h"
 }
 
+export interface PendingCommand {
+  command: string;
+  confirmText: string;
+}
+
 export interface Session {
   messages: ChatMessage[];
   pendingToolCall?: PendingToolCall; // чекаємо yes/no
+  pendingCommand?: PendingCommand;
 }
 
 export interface LLMResponse {
