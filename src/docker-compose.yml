@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    container_name: ai-devops-bot
+    restart: unless-stopped
+
+    volumes:
+      - /:/host
+      
+      - .:/app
+      - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    command: npm run dev
+
+    env_file:
+      - .env
+
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: ai-devops-redis
+    restart: unless-stopped
