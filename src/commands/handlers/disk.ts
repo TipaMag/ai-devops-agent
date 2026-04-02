@@ -4,17 +4,27 @@ import type { CommandHandler } from "../types";
 
 const execAsync = promisify(exec);
 
+// ── DISK ─────────────────────────────────────────────
 export const diskCommand: CommandHandler = {
   command: "/disk",
   description: "Вільне місце на дисках",
   risk: "low",
 
   async execute() {
-    const { stdout } = await execAsync("df -h --output=source,size,used,avail,pcent,target");
-    return `💾 *Диски:*\n\`\`\`\n${stdout.trim()}\n\`\`\``;
-  },
+    try {
+      const { stdout } = await execAsync(
+        `chroot /host sh -c "df -h"`
+      );
+
+      return `💾 *Диски:*\n\`\`\`\n${stdout.trim()}\n\`\`\``;
+    } catch (err: any) {
+      console.error("diskCommand error:", err);
+      return `❌ Помилка отримання дисків: ${err.message}`;
+    }
+  }
 };
 
+// ── MOUNT ────────────────────────────────────────────
 export const mountCommand: CommandHandler = {
   command: "/mount",
   description: "Змонтувати зовнішній диск",
@@ -22,11 +32,20 @@ export const mountCommand: CommandHandler = {
   confirmText: "⚠️ Змонтувати зовнішній диск `/dev/sdb1`?",
 
   async execute() {
-    await execAsync("sudo mount /dev/sdb1 /mnt/external");
-    return "✅ Диск змонтовано в /mnt/external";
+    try {
+      const { stdout, stderr } = await execAsync(
+        `chroot /host sh -c "mount /dev/sdb1 /mnt/external"`
+      );
+
+      return `✅ Диск змонтовано\n${stdout || stderr}`;
+    } catch (err: any) {
+      console.error("mountCommand error:", err);
+      return `❌ Помилка монтування: ${err.message}`;
+    }
   },
 };
 
+// ── UMOUNT ───────────────────────────────────────────
 export const umountCommand: CommandHandler = {
   command: "/umount",
   description: "Розмонтувати зовнішній диск",
@@ -34,7 +53,15 @@ export const umountCommand: CommandHandler = {
   confirmText: "⚠️ Розмонтувати `/mnt/external`?",
 
   async execute() {
-    await execAsync("sudo umount /mnt/external");
-    return "✅ Диск розмонтовано";
+    try {
+      const { stdout, stderr } = await execAsync(
+        `chroot /host sh -c "umount /mnt/external"`
+      );
+
+      return `✅ Диск розмонтовано\n${stdout || stderr}`;
+    } catch (err: any) {
+      console.error("umountCommand error:", err);
+      return `❌ Помилка розмонтування: ${err.message}`;
+    }
   },
 };

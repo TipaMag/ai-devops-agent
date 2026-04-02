@@ -80,6 +80,12 @@ bot.launch({ dropPendingUpdates: true }).catch((err) => {
   process.exit(1);
 });
 
+bot.catch((err, ctx) => {
+  console.error("GLOBAL BOT ERROR:", err);
+
+  ctx.reply("❌ Внутрішня помилка бота");
+});
+
 // Плавна зупинка — важливо для ts-node-dev рестарту
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
