@@ -132,6 +132,7 @@ export const shellTool: ToolDefinition = {
         `chroot /host sh -c "${safeCommand}"`,
         { timeout: TIMEOUT_MS }
       );
+      // const { stdout } = await execAsync(safeCommand, { timeout: TIMEOUT_MS });
 
       return stdout.trim() || stderr.trim() || "(no output)";
     } catch (err: any) {

@@ -1,14 +1,14 @@
 import { CommandHandler } from "./types";
 import { statusCommand } from "./handlers/status";
 import { rebootCommand, } from "./handlers/system";
-import { diskCommand, mountCommand, umountCommand } from "./handlers/disk";
+import { diskCommand } from "./handlers/disk";
 
 const commandHandlers: CommandHandler[] = [
   statusCommand,
   rebootCommand,
   diskCommand,
-  mountCommand,
-  umountCommand,
+  // mountCommand,
+  // umountCommand,
 ];
 
 export const commandRegistry = new Map(

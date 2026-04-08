@@ -3,6 +3,9 @@ version: "3.9"
 services:
   bot:
     build: .
+    privileged: true  # ← дає доступ до всіх системних викликів
+    network_mode: host
+    pid: host
     container_name: ai-devops-bot
     restart: unless-stopped
 
@@ -11,6 +14,8 @@ services:
       
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
+      # Додаємо доступ до системних шин для reboot через systemctl
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
 
     command: npm run dev
 

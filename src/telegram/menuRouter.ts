@@ -1,44 +1,39 @@
 import { Context } from "telegraf";
+import { mainKeyboard, confirmKeyboard, disksKeyboard } from "./keyboards";
 import { commandRegistry } from "../commands/registry";
-import {
-  mainKeyboard,
-  disksKeyboard,
-  systemKeyboard,
-  confirmKeyboard,
-  dockerKeyboard,
-} from "./keyboards";
-import { restartContainer } from "../commands/handlers/docker";
+import { diskSection } from "./sections/diskSection";
+import { dockerSection } from "./sections/dockerSection";
+import { systemSection } from "./sections/systemSection";
+import { statusSection } from "./sections/statusSection";
+import type { PendingStore } from "./types";
+import { getDiskStatusText, umountDisk } from "../services/disk.service";
+import { networkSection } from "./sections/networkSection";
 
-// telegram/menuRouter.ts
+// ── Pending store ──────────────────────────────────────────────────────────
+const _pending = new Map<number, string>();
 
-const SUBMENU: Record<string, () => any> = {
-  "💾 Диски":   disksKeyboard,
-  "⚙️ Система": systemKeyboard,
-  "🐳 Докер":   dockerKeyboard,  // async — підтягує контейнери
+const pending: PendingStore = {
+  get: (id) => _pending.get(id),
+  set: (id, cmd) => _pending.set(id, cmd),
+  delete: (id) => _pending.delete(id),
 };
 
-const COMMANDS: Record<string, string> = {
-  "📊 Статус":           "/status",
-  "📋 Показати диски":   "/disk",
-  "🔌 Змонтувати":       "/mount",
-  "⏏️ Розмонтувати":     "/umount",
-  "🔄 Перезавантажити":  "/reboot",
-};
+// ── Секції — порядок важливий (перша яка canHandle виграє) ────────────────
+const sections = [statusSection, diskSection, dockerSection, systemSection, networkSection];
 
-const pending = new Map<number, string>();
+// ── Публічні функції ───────────────────────────────────────────────────────
 
 export function isMenuButton(text: string): boolean {
   return (
-    text in SUBMENU ||
-    text in COMMANDS ||
-    text.startsWith("🔄 ") ||  // docker container restart
-    ["⬅️ Головне меню", "✅ Так", "❌ Скасувати"].includes(text)
+    isSystemButton(text) ||
+    sections.some((s) => s.canHandle(text))
   );
 }
 
 export async function handleMenuButton(ctx: Context, text: string) {
   const chatId = ctx.chat!.id;
 
+  // ── Системні кнопки (спільні для всіх секцій) ─────────────────────────
   if (text === "⬅️ Головне меню") {
     pending.delete(chatId);
     await ctx.reply("🏠 Головне меню", mainKeyboard());
@@ -55,44 +50,35 @@ export async function handleMenuButton(ctx: Context, text: string) {
     const command = pending.get(chatId);
     if (!command) return;
     pending.delete(chatId);
-    await ctx.reply("⏳ Виконую...");
-    const result = await commandRegistry.get(command)!.execute();
-    await ctx.reply(result, { parse_mode: "Markdown", ...mainKeyboard() });
-    return;
-  }
 
-  // Навігація в підменю
-  if (text in SUBMENU) {
-    const keyboard = await SUBMENU[text]();
-    await ctx.reply(text, keyboard);
-    return;
-  }
-
-  // Docker — рестарт контейнера по кнопці
-  if (text.startsWith("🔄 ") && text !== "🔄 Перезавантажити") {
-    const name = text.slice(3);
-    await ctx.reply("⏳ Перезапускаю...");
-    const result = await restartContainer(name);
-    await ctx.reply(result, { parse_mode: "Markdown", ...await dockerKeyboard() });
-    return;
-  }
-
-  // Виконання команди
-  if (text in COMMANDS) {
-    const command = COMMANDS[text];
-    const def = commandRegistry.get(command)!;
-
-    if (def.risk === "high") {
-      pending.set(chatId, command);
-      await ctx.reply(def.confirmText!, {
-        parse_mode: "Markdown",
-        ...confirmKeyboard(),
-      });
+    // Спеціальні дії які не в commandRegistry
+    if (command === "__umount_disk__") {
+      await ctx.reply("⏳ Розмонтовую...");
+      const result = await umountDisk();
+      const [status, keyboard] = await Promise.all([
+        getDiskStatusText(),
+        disksKeyboard(),
+      ]);
+      await ctx.reply(result, { parse_mode: "Markdown" });
+      await ctx.reply(status, { parse_mode: "Markdown", ...keyboard });
       return;
     }
 
+    // Звичайні команди з реєстру
     await ctx.reply("⏳ Виконую...");
-    const result = await def.execute();
+    const result = await commandRegistry.get(command)!.execute();
     await ctx.reply(result, { parse_mode: "Markdown", ...mainKeyboard() });
   }
+
+  // ── Делегуємо секціям ─────────────────────────────────────────────────
+  for (const section of sections) {
+    if (section.canHandle(text)) {
+      await section.handle(ctx, text, pending);
+      return;
+    }
+  }
+}
+
+function isSystemButton(text: string): boolean {
+  return ["⬅️ Головне меню", "✅ Так", "❌ Скасувати"].includes(text);
 }
